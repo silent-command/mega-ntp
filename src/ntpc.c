@@ -13,7 +13,7 @@
 #include "timecalc.h"
 #include "ui.h"
 
-#define NTPC_VERSION "0.1.1"
+#define NTPC_VERSION "0.1.2"
 
 #define ROW_CLOCK 2
 #define ROW_SERVER 4
