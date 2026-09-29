@@ -170,7 +170,7 @@ static void draw_board(void)
 
 static void draw_keys(void)
 {
-  ui_line(UI_ROW_KEYS, "RETURN sync   S server   O offset   F/B color   RUN/STOP quit", 0);
+  ui_line(UI_ROW_KEYS, "RETURN sync   S server   O offset   MEGA-F/B color   RUN/STOP quit", 0);
 }
 
 static void draw_all(void)
@@ -349,14 +349,16 @@ int main(void)
     case 's': case 'S': edit_server(); break;
     case 'o': case 'O': edit_offset(); break;
     case 'f': case 'F':
-      /* Every row, not only the ones draw_all() knows how to draw: the
+      /* MEGA held, as every client binds the colors (2026-09-29).
+       * Every row, not only the ones draw_all() knows how to draw: the
        * sync's results and the status keep no copy of their text, so the
        * whole color RAM ($FF80000, a byte per cell, no attributes in use
        * here) takes the new color instead of a redraw. */
+      if (!(ui_last_mods & MOD_MEGA)) break;
       m65_screen_cycle_text_colour();
       lfill(0xff80000UL, m65_screen_text_colour(), 80 * (unsigned int)m65_screen_rows());
       break;
-    case 'b': case 'B': m65_screen_cycle_background(); break;
+    case 'b': case 'B': if (ui_last_mods & MOD_MEGA) m65_screen_cycle_background(); break;
     case 'q': case 'Q': case KEY_STOP:
       m65_exit_to_basic();                         /* BASIC's READY, disk still mounted; never returns */
       break;
