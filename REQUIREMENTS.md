@@ -122,3 +122,39 @@ unexplained. Both open.
 that never answers (the second lookup and the timeout message), a
 write-protected disk (the save message), a real PNG capture of the
 screen (`m65 -S` did not write the file as invoked).
+
+### 5.4 The location chosen, and daylight saving kept by itself (2026-10-07)
+
+The user found the offset easy to overlook: a fresh disk synced the
+clock to UTC before anyone had said where the machine was (5.3 was the
+same mistake from the other side). Now a disk without NTP.CFG asks first
+and syncs nothing until it knows: a region, then a city, or an offset
+typed by hand with its daylight-saving rule chosen from a list. RUN/STOP
+there leaves the program. L (and the old O) asks again later.
+
+NTP.CFG is "NTP2": the server, the standard offset, the rule and the
+city. The first version's file still reads, as an offset with no rule.
+
+Daylight saving is worked out at every sync from the UTC time the server
+sent, by one of eight rules (src/timecalc.c): none, US and Canada,
+Europe (a UTC-fixed rule, which also covers the UK, Ireland and
+Portugal), south-east Australia, New Zealand, Chile (whose transitions
+are the first Sunday on or after the 2nd, which the first draft got
+wrong in four years out of fifteen), Israel and Egypt. The host suite
+checks all of them against every real transition 2026-2040 for twelve
+cities, taken from the IANA database by Python's zoneinfo: 360
+transitions, the second before and the second itself.
+
+The list is ZONES on the disk, 150 cities in 8 regions, made by
+tools/make_zones.py from the same database: each city's offset is the
+database's, and its rule is whichever of the eight reproduces every one
+of its transitions from the day it is run to 2036, checked by running
+the client's own C. A city that changes its clocks by some other rule
+is left out and reported. Run it again when a government changes its
+zone. On 2026-10-07 the database already had British Columbia and
+Alberta staying on summer time from March 2026 (UTC-7 and UTC-6 all
+year) and Morocco on UTC+0 all year; the list follows it. The test
+target also loads the real list through src/places.c on the host and
+compares all 150 cities on three dates with the database.
+
+Not yet run on the machine: the serial adapter was disconnected.

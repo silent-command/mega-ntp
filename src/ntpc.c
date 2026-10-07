@@ -1,6 +1,9 @@
 /* MEGA65 NTP client: asks a time server for the time over mega-net and
- * sets the real-time clock to it, in local time by the UTC offset kept
- * in NTP.CFG. It syncs once at start; RETURN syncs again. */
+ * sets the real-time clock to it, in local time: the location kept in
+ * NTP.CFG gives the standard offset and the daylight-saving rule, and
+ * each sync works out which is in force. On a disk without NTP.CFG it
+ * asks where it is before it syncs. It syncs once at start; RETURN
+ * syncs again. */
 #include "mega65/memory.h"
 #include "mega65/time.h"
 #include "mega65/targets.h"
@@ -11,6 +14,7 @@
 #include "netutil.h"
 #include "config.h"
 #include "timecalc.h"
+#include "places.h"
 #include "ui.h"
 
 #define NTPC_VERSION "0.1.2"
@@ -150,10 +154,12 @@ static void draw_server(void)
   ui_line(ROW_SERVER, "Server:   ", cfg_server);
 }
 
+/* "New York (UTC-05:00, US and Canada daylight saving)" */
 static void draw_offset(void)
 {
-  clear(); add("Offset:   "); add_offset(cfg_offset);
-  add("   the clock is kept in this local time");
+  clear(); add("Location: ");
+  add(cfg_city[0] ? cfg_city : "set by hand");
+  add(" ("); add_offset(cfg_offset); add(", "); add(tc_rule_text(cfg_rule)); add(")");
   ui_line(ROW_OFFSET, line, 0);
 }
 
@@ -170,7 +176,7 @@ static void draw_board(void)
 
 static void draw_keys(void)
 {
-  ui_line(UI_ROW_KEYS, "RETURN sync   S server   O offset   MEGA-F/B color   RUN/STOP quit", 0);
+  ui_line(UI_ROW_KEYS, "RETURN sync   S server   L location   MEGA-F/B color   RUN/STOP quit", 0);
 }
 
 static void draw_all(void)
@@ -212,6 +218,8 @@ static void sync(void)
   unsigned int waited = 0;
   tc_date utc, local, before, after;
   uint32_t want, got = 0;
+  uint8_t summer;
+  int16_t offset;
 
   ui_clear_rows(ROW_ADDR, ROW_AFTER);
   if (!clock_settable()) { ui_status("this board's clock is not one this program can set", 0); return; }
@@ -239,7 +247,11 @@ static void sync(void)
 
   net_ntp_time(0, &t);
   to_date(&t, &utc);
-  net_ntp_time(cfg_offset, &t);
+  /* daylight saving decided from UTC itself, so a sync on the night of
+   * a change is right either side of it */
+  summer = tc_dst_in_effect(cfg_rule, cfg_offset, &utc);
+  offset = (int16_t)(cfg_offset + (summer ? 60 : 0));
+  net_ntp_time(offset, &t);
   to_date(&t, &local);
   if (!tc_valid(&local)) { ui_status("the server's time is outside the clock's years, 2000 to 2099", 0); return; }
 
@@ -251,7 +263,7 @@ static void sync(void)
   ui_line(ROW_UTC, line, 0);
   clear(); add("Set to:   "); add_date(&local); add("  ");
   add(tc_weekday_name(tc_weekday(local.year, local.month, local.day)));
-  add("  ("); add_offset(cfg_offset); add(")");
+  add("  ("); add_offset(offset); if (summer) add(", daylight saving"); add(")");
   ui_line(ROW_LOCAL, line, 0);
   clear(); add("Was:      ");
   if (tc_valid(&before)) {
@@ -307,21 +319,160 @@ static void edit_server(void)
   save_settings();
 }
 
-static void edit_offset(void)
+/* ---- the location ------------------------------------------------------
+ * Where the MEGA65 is: a region, then a city from the list made from the
+ * time-zone database, or an offset typed by hand with its daylight-saving
+ * rule chosen. Asked before the first sync on a disk without NTP.CFG,
+ * since a clock set to UTC is the mistake otherwise (2026-10-07), and by
+ * L afterwards. */
+
+#define PICK_FIRST 4
+#define PICK_ROWS ((unsigned char)(m65_screen_rows() - 8))
+#define ROW_PICK_INFO ((unsigned char)(m65_screen_rows() - 3))
+
+static uint8_t pick_first;                /* the cities shown are pick_first.. */
+static uint8_t pick_mode;                 /* what the list holds */
+#define PICK_REGIONS 0
+#define PICK_CITIES 1
+#define PICK_RULES 2
+
+/* Row i of the list as text in `line`. */
+static void pick_text(uint8_t i)
+{
+  char name[PLACE_REGION_LEN + 1];
+  int16_t off;
+  uint8_t rule;
+  clear(); add("  ");
+  if (pick_mode == PICK_REGIONS) {
+    if (i < regions_count) { region_name(i, name); add(name); }
+    else add("None of these: set an offset by hand");
+  } else if (pick_mode == PICK_CITIES) {
+    place_get((uint8_t)(pick_first + i), name, &off, &rule);
+    add(name);
+    while (at < 22) add(" ");
+    add_offset(off);
+    if (rule) { add("  "); add(tc_rule_text(rule)); }
+  } else {
+    add(tc_rule_text(i));
+    if (i == TC_DST_EU) add(" (UK, Ireland, the EU)");
+  }
+}
+
+static void pick_row(uint8_t i, uint8_t top, uint8_t sel)
+{
+  pick_text(i);
+  if (i == sel) m65_screen_reverse(1);
+  ui_line((unsigned char)(PICK_FIRST + i - top), line, 0);
+  m65_screen_reverse(0);
+}
+
+static void pick_page(uint8_t n, uint8_t top, uint8_t sel)
+{
+  uint8_t r;
+  for (r = 0; r < PICK_ROWS; r++) {
+    if ((uint8_t)(top + r) < n) pick_row((uint8_t)(top + r), top, sel);
+    else ui_line((unsigned char)(PICK_FIRST + r), 0, 0);
+  }
+}
+
+/* A list of n rows under `heading`; the index chosen, or 0xff for RUN/STOP.
+ * Letters jump to the next row that starts with them. */
+static uint8_t pick(const char *heading, uint8_t n, const char *stop_word)
+{
+  uint8_t sel = 0, top = 0, old, k, i, c;
+  ui_clear_rows(1, (unsigned char)(m65_screen_rows() - 2));
+  ui_line(2, heading, 0);
+  clear(); add("CRSR moves   RETURN chooses   ");
+  if (pick_mode == PICK_CITIES) add("a letter jumps   ");
+  add("RUN/STOP "); add(stop_word);
+  ui_line(UI_ROW_KEYS, line, 0);
+  pick_page(n, top, sel);
+  for (;;) {
+    k = ui_wait_key();
+    old = sel;
+    if (k == KEY_DOWN) { if (sel + 1 < n) sel++; }
+    else if (k == KEY_UP) { if (sel) sel--; }
+    else if (k == KEY_RIGHT) { if (top + PICK_ROWS < n) sel = (uint8_t)(top + PICK_ROWS); }
+    else if (k == KEY_LEFT) sel = (uint8_t)(top >= PICK_ROWS ? top - PICK_ROWS : 0);
+    else if (k == KEY_HOME) sel = 0;
+    else if (k == KEY_RETURN) return sel;
+    else if (k == KEY_STOP) return 0xff;
+    else if (pick_mode == PICK_CITIES && ((k >= 'a' && k <= 'z') || (k >= 'A' && k <= 'Z'))) {
+      k = (uint8_t)(k | 0x20);
+      for (i = 1; i <= n; i++) {              /* the next match after the selection, round to the top */
+        uint8_t j = (uint8_t)((sel + i) % n);
+        pick_text(j);
+        c = (uint8_t)(line[2] | 0x20);
+        if (c == k) { sel = j; break; }
+      }
+    } else continue;
+    if (sel < top || sel >= top + PICK_ROWS) { top = (uint8_t)(sel - sel % PICK_ROWS); pick_page(n, top, sel); }
+    else if (sel != old) { pick_row(old, top, sel); pick_row(sel, top, sel); }
+  }
+}
+
+/* An offset and a rule typed and chosen; 1 when both were. */
+static uint8_t location_by_hand(void)
 {
   char buf[8];
   int16_t v;
-
+  uint8_t r;
   tc_format_offset(buf, cfg_offset);
-  ui_status("hours from UTC, like -5, +1 or +5:30; change it for daylight saving", 0);
+  ui_clear_rows(1, (unsigned char)(m65_screen_rows() - 1));
+  ui_line(2, "Your standard time, in hours from UTC: like -5, +1 or +5:30.", 0);
+  ui_line(3, "Give the winter offset; daylight saving is chosen next.", 0);
+  ui_line(UI_ROW_KEYS, "RETURN accepts   RUN/STOP goes back", 0);
   for (;;) {
-    if (!ui_read_line(ROW_OFFSET, "Offset:   UTC", buf, 7)) { draw_offset(); ui_status(0, 0); return; }
+    if (!ui_read_line(5, "Offset: UTC", buf, 7)) return 0;
     if (tc_parse_offset(buf, &v)) break;
     ui_status("not an offset: like -5, +1 or +5:30, from -12:00 to +14:00", 0);
   }
-  cfg_offset = v;
-  draw_offset();
-  save_settings();
+  pick_mode = PICK_RULES;
+  r = pick("Does the clock change for daylight saving there?", TC_DST_RULES, "goes back");
+  if (r == 0xff) return 0;
+  cfg_offset = v; cfg_rule = r; cfg_city[0] = 0;
+  return 1;
+}
+
+/* The whole question; 1 when a location was chosen. `first` is the run
+ * before any NTP.CFG, where RUN/STOP leaves the program rather than
+ * syncing to UTC. */
+static uint8_t choose_location(uint8_t first)
+{
+  uint8_t r, c, cf, cn, rule;
+  int16_t off;
+  char heading[64];
+  for (;;) {
+    if (!places_count) {
+      if (location_by_hand()) return 1;
+      if (first) m65_exit_to_basic();
+      return 0;
+    }
+    pick_mode = PICK_REGIONS;
+    r = pick(first ? "Where is this MEGA65? Choose a region, so the clock keeps local time."
+                   : "Where is this MEGA65? Choose a region.",
+             (uint8_t)(regions_count + 1), first ? "quits" : "goes back");
+    if (r == 0xff) { if (first) m65_exit_to_basic(); return 0; }
+    if (r == regions_count) { if (location_by_hand()) return 1; continue; }
+    region_cities(r, &cf, &cn);
+    pick_first = cf;
+    pick_mode = PICK_CITIES;
+    clear(); add("Choose the city nearest you in "); region_name(r, heading); add(heading); add(".");
+    for (c = 0; (heading[c] = line[c]) != 0; c++) ;
+    c = pick(heading, cn, "goes back");
+    if (c == 0xff) continue;
+    place_get((uint8_t)(cf + c), cfg_city, &off, &rule);
+    cfg_offset = off; cfg_rule = rule;
+    return 1;
+  }
+}
+
+static void edit_location(void)
+{
+  uint8_t chose = choose_location(0);
+  ui_clear_rows(1, (unsigned char)(m65_screen_rows() - 1));
+  draw_all();
+  if (chose) save_settings(); else ui_status(0, 0);
 }
 
 int main(void)
@@ -335,10 +486,18 @@ int main(void)
   draw_all();
   ui_status("loading mega-net...", 0);
   if (!net_load(&err)) ui_status("network: ", err);   /* the clock and the settings still work */
-  cfg_load(boot_drive);
+  places_load(boot_drive);
+  ui_idle = on_idle;
+  if (!cfg_load(boot_drive)) {
+    /* no NTP.CFG: where the MEGA65 is comes first, and nothing is synced
+     * until it is known (or RUN/STOP leaves) */
+    choose_location(1);
+    ui_clear_rows(1, (unsigned char)(m65_screen_rows() - 1));
+    draw_all();
+    save_settings();
+  }
   draw_server();
   draw_offset();
-  ui_idle = on_idle;
   if (net_ready) sync();
 
   for (;;) {
@@ -347,7 +506,7 @@ int main(void)
     switch (k) {
     case KEY_RETURN: sync(); break;
     case 's': case 'S': edit_server(); break;
-    case 'o': case 'O': edit_offset(); break;
+    case 'l': case 'L': case 'o': case 'O': edit_location(); break;   /* O was the offset key */
     case 'f': case 'F':
       /* MEGA held, as every client binds the colors (2026-09-29).
        * Every row, not only the ones draw_all() knows how to draw: the

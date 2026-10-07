@@ -127,6 +127,78 @@ uint8_t tc_weekday(uint16_t year, uint8_t month, uint8_t day)
   return (uint8_t)((day_number(year, month, day) + 6) % 7);   /* 2000-01-01 was a Saturday */
 }
 
+/* ---- daylight saving --------------------------------------------------- */
+
+/* One transition: the `week`th `wday` of `month` on or after day `from`
+ * (week 5 is the last), moved `shift` days, at `hour` -- on the clock in
+ * force before the change, or in UTC when the rule says so. Chile's is
+ * the first Sunday on or after the 2nd, which tzdata writes Sun>=2. */
+typedef struct { uint8_t month, week, wday; int8_t shift; uint8_t hour, from; } tc_when;
+typedef struct { const char *name, *text; tc_when start, end; uint8_t utc; } tc_rule;
+
+static const tc_rule rules[TC_DST_RULES] = {
+  { "NONE", "no daylight saving",                 { 0, 0, 0, 0, 0, 1 },  { 0, 0, 0, 0, 0, 1 },  0 },
+  { "US",   "US and Canada daylight saving",      { 3, 2, 0, 0, 2, 1 },  { 11, 1, 0, 0, 2, 1 }, 0 },
+  { "EU",   "European summer time",               { 3, 5, 0, 0, 1, 1 },  { 10, 5, 0, 0, 1, 1 }, 1 },
+  { "AU",   "Australian daylight saving",         { 10, 1, 0, 0, 2, 1 }, { 4, 1, 0, 0, 3, 1 },  0 },
+  { "NZ",   "New Zealand daylight saving",        { 9, 5, 0, 0, 2, 1 },  { 4, 1, 0, 0, 3, 1 },  0 },
+  { "CL",   "Chilean summer time",                { 9, 1, 0, 0, 4, 2 },  { 4, 1, 0, 0, 3, 2 },  1 },
+  { "IL",   "Israeli summer time",                { 3, 5, 0, -2, 2, 1 }, { 10, 5, 0, 0, 2, 1 }, 0 },
+  { "EG",   "Egyptian summer time",               { 4, 5, 5, 0, 0, 1 },  { 10, 5, 4, 0, 24, 1 }, 0 }
+};
+
+static uint8_t same_word(const char *a, const char *b)
+{
+  while (*a && *b) {
+    char x = *a++, y = *b++;
+    if (x >= 'a' && x <= 'z') x = (char)(x - 32);
+    if (x != y) return 0;
+  }
+  return (uint8_t)(*a == *b);
+}
+
+uint8_t tc_rule_parse(const char *name)
+{
+  uint8_t r;
+  for (r = 0; r < TC_DST_RULES; r++) if (same_word(name, rules[r].name)) return r;
+  return 0xff;
+}
+
+const char *tc_rule_name(uint8_t rule) { return rule < TC_DST_RULES ? rules[rule].name : "NONE"; }
+const char *tc_rule_text(uint8_t rule) { return rule < TC_DST_RULES ? rules[rule].text : rules[0].text; }
+
+/* The day of `month` a transition falls on in `year`. */
+static uint8_t when_day(uint16_t year, const tc_when *w)
+{
+  uint8_t first = tc_weekday(year, w->month, w->from), d;
+  d = (uint8_t)(w->from + (uint8_t)((w->wday + 7 - first) % 7));   /* the first such weekday on or after `from` */
+  if (w->week == 5) { while (d + 7 <= month_days(year, w->month)) d = (uint8_t)(d + 7); }
+  else d = (uint8_t)(d + 7 * (w->week - 1));
+  return (uint8_t)(d + w->shift);
+}
+
+/* Seconds since 2000 at which a transition happens, in UTC: its wall-clock
+ * time less the offset in force before it (`before`, minutes). */
+static int32_t when_seconds(uint16_t year, const tc_when *w, uint8_t utc, int16_t before)
+{
+  int32_t s = (int32_t)day_number(year, w->month, when_day(year, w)) * 86400L + (int32_t)w->hour * 3600L;
+  if (!utc) s -= (int32_t)before * 60L;
+  return s;
+}
+
+uint8_t tc_dst_in_effect(uint8_t rule, int16_t std_minutes, const tc_date *utc)
+{
+  const tc_rule *r;
+  int32_t now, on, off;
+  if (!rule || rule >= TC_DST_RULES || !tc_valid(utc)) return 0;
+  r = &rules[rule];
+  now = (int32_t)tc_seconds(utc);
+  on = when_seconds(utc->year, &r->start, r->utc, std_minutes);                    /* on standard time until it */
+  off = when_seconds(utc->year, &r->end, r->utc, (int16_t)(std_minutes + 60));     /* on summer time until it */
+  if (r->start.month < r->end.month) return (uint8_t)(now >= on && now < off);    /* north: summer inside the year */
+  return (uint8_t)(now >= on || now < off);                                        /* south: summer across New Year */
+}
+
 void tc_format_drift(char *out, uint32_t truth, uint32_t clock)
 {
   uint32_t d;

@@ -1,0 +1,151 @@
+ZONES1
+North America|St. John's|-03:30|US
+North America|Halifax|-04:00|US
+North America|Toronto|-05:00|US
+North America|Montreal|-05:00|US
+North America|New York|-05:00|US
+North America|Boston|-05:00|US
+North America|Washington DC|-05:00|US
+North America|Atlanta|-05:00|US
+North America|Miami|-05:00|US
+North America|Detroit|-05:00|US
+North America|Chicago|-06:00|US
+North America|Dallas|-06:00|US
+North America|Houston|-06:00|US
+North America|Minneapolis|-06:00|US
+North America|Winnipeg|-06:00|US
+North America|Regina|-06:00|NONE
+North America|Mexico City|-06:00|NONE
+North America|Denver|-07:00|US
+North America|Calgary|-06:00|NONE
+North America|Edmonton|-06:00|NONE
+North America|Salt Lake City|-07:00|US
+North America|Phoenix|-07:00|NONE
+North America|Whitehorse|-07:00|NONE
+North America|Los Angeles|-08:00|US
+North America|San Francisco|-08:00|US
+North America|Seattle|-08:00|US
+North America|Las Vegas|-08:00|US
+North America|Vancouver|-07:00|NONE
+North America|Tijuana|-08:00|US
+North America|Anchorage|-09:00|US
+North America|Honolulu|-10:00|NONE
+Central and South America|Guatemala City|-06:00|NONE
+Central and South America|San Jose CR|-06:00|NONE
+Central and South America|Panama City|-05:00|NONE
+Central and South America|Kingston|-05:00|NONE
+Central and South America|Bogota|-05:00|NONE
+Central and South America|Quito|-05:00|NONE
+Central and South America|Lima|-05:00|NONE
+Central and South America|Caracas|-04:00|NONE
+Central and South America|Santo Domingo|-04:00|NONE
+Central and South America|San Juan|-04:00|NONE
+Central and South America|La Paz|-04:00|NONE
+Central and South America|Manaus|-04:00|NONE
+Central and South America|Santiago|-04:00|CL
+Central and South America|Asuncion|-03:00|NONE
+Central and South America|Buenos Aires|-03:00|NONE
+Central and South America|Montevideo|-03:00|NONE
+Central and South America|Sao Paulo|-03:00|NONE
+Central and South America|Rio de Janeiro|-03:00|NONE
+Central and South America|Brasilia|-03:00|NONE
+Europe|Reykjavik|+00:00|NONE
+Europe|Dublin|+00:00|EU
+Europe|London|+00:00|EU
+Europe|Lisbon|+00:00|EU
+Europe|Madrid|+01:00|EU
+Europe|Paris|+01:00|EU
+Europe|Brussels|+01:00|EU
+Europe|Amsterdam|+01:00|EU
+Europe|Berlin|+01:00|EU
+Europe|Zurich|+01:00|EU
+Europe|Rome|+01:00|EU
+Europe|Vienna|+01:00|EU
+Europe|Prague|+01:00|EU
+Europe|Warsaw|+01:00|EU
+Europe|Copenhagen|+01:00|EU
+Europe|Oslo|+01:00|EU
+Europe|Stockholm|+01:00|EU
+Europe|Budapest|+01:00|EU
+Europe|Belgrade|+01:00|EU
+Europe|Helsinki|+02:00|EU
+Europe|Riga|+02:00|EU
+Europe|Tallinn|+02:00|EU
+Europe|Vilnius|+02:00|EU
+Europe|Kyiv|+02:00|EU
+Europe|Bucharest|+02:00|EU
+Europe|Sofia|+02:00|EU
+Europe|Athens|+02:00|EU
+Europe|Istanbul|+03:00|NONE
+Europe|Minsk|+03:00|NONE
+Europe|Moscow|+03:00|NONE
+Africa|Accra|+00:00|NONE
+Africa|Dakar|+00:00|NONE
+Africa|Casablanca|+00:00|NONE
+Africa|Algiers|+01:00|NONE
+Africa|Tunis|+01:00|NONE
+Africa|Lagos|+01:00|NONE
+Africa|Kinshasa|+01:00|NONE
+Africa|Cairo|+02:00|EG
+Africa|Johannesburg|+02:00|NONE
+Africa|Harare|+02:00|NONE
+Africa|Nairobi|+03:00|NONE
+Africa|Addis Ababa|+03:00|NONE
+Middle East|Jerusalem|+02:00|IL
+Middle East|Tel Aviv|+02:00|IL
+Middle East|Amman|+03:00|NONE
+Middle East|Damascus|+03:00|NONE
+Middle East|Baghdad|+03:00|NONE
+Middle East|Riyadh|+03:00|NONE
+Middle East|Kuwait City|+03:00|NONE
+Middle East|Doha|+03:00|NONE
+Middle East|Tehran|+03:30|NONE
+Middle East|Dubai|+04:00|NONE
+Middle East|Muscat|+04:00|NONE
+Middle East|Baku|+04:00|NONE
+Middle East|Tbilisi|+04:00|NONE
+Middle East|Yerevan|+04:00|NONE
+Asia|Kabul|+04:30|NONE
+Asia|Karachi|+05:00|NONE
+Asia|Tashkent|+05:00|NONE
+Asia|Almaty|+05:00|NONE
+Asia|Delhi|+05:30|NONE
+Asia|Mumbai|+05:30|NONE
+Asia|Bengaluru|+05:30|NONE
+Asia|Kolkata|+05:30|NONE
+Asia|Colombo|+05:30|NONE
+Asia|Kathmandu|+05:45|NONE
+Asia|Dhaka|+06:00|NONE
+Asia|Yangon|+06:30|NONE
+Asia|Bangkok|+07:00|NONE
+Asia|Hanoi|+07:00|NONE
+Asia|Ho Chi Minh City|+07:00|NONE
+Asia|Jakarta|+07:00|NONE
+Asia|Singapore|+08:00|NONE
+Asia|Kuala Lumpur|+08:00|NONE
+Asia|Manila|+08:00|NONE
+Asia|Hong Kong|+08:00|NONE
+Asia|Beijing|+08:00|NONE
+Asia|Shanghai|+08:00|NONE
+Asia|Taipei|+08:00|NONE
+Asia|Seoul|+09:00|NONE
+Asia|Tokyo|+09:00|NONE
+Asia|Osaka|+09:00|NONE
+Asia|Vladivostok|+10:00|NONE
+Oceania|Perth|+08:00|NONE
+Oceania|Darwin|+09:30|NONE
+Oceania|Adelaide|+09:30|AU
+Oceania|Brisbane|+10:00|NONE
+Oceania|Sydney|+10:00|AU
+Oceania|Melbourne|+10:00|AU
+Oceania|Canberra|+10:00|AU
+Oceania|Hobart|+10:00|AU
+Oceania|Guam|+10:00|NONE
+Oceania|Noumea|+11:00|NONE
+Oceania|Auckland|+12:00|NZ
+Oceania|Wellington|+12:00|NZ
+Oceania|Suva|+12:00|NONE
+Oceania|Apia|+13:00|NONE
+Oceania|Nuku'alofa|+13:00|NONE
+Oceania|Kiritimati|+14:00|NONE
+UTC|UTC|+00:00|NONE

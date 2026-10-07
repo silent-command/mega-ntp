@@ -8,6 +8,11 @@
 #define KEY_STOP 3
 #define KEY_RETURN 13
 #define KEY_DEL 20
+#define KEY_DOWN 17
+#define KEY_UP 145
+#define KEY_RIGHT 29
+#define KEY_LEFT 157
+#define KEY_HOME 19
 #define MOD_MEGA 0x08                 /* $D611 bit 3, read with the key */
 
 #include "m65_screen.h"

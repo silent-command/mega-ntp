@@ -118,7 +118,9 @@ def build_client():
     shutil.copy(image, BIN / "meganet")
     if d81.exists():
         d81.unlink()
-    run([c1541, "-format", "ntp,nt", "d81", d81, "-write", prg, "ntp", "-write", BIN / "meganet", "meganet"],
+    zones = ROOT / "assets" / "zones.txt"          # the location list (tools/make_zones.py)
+    run([c1541, "-format", "ntp,nt", "d81", d81, "-write", prg, "ntp", "-write", BIN / "meganet", "meganet",
+         "-write", zones, "zones,s"],
         stdout=subprocess.DEVNULL)
     run([c1541, "-attach", d81, "-dir"])
     return 0
@@ -133,7 +135,14 @@ def build_test():
     print("host suite:")
     run([cc, "-std=c99", "-O2", "-Wall", "-Wextra", "-Werror", "-I", ROOT / "src",
          ROOT / "tests" / "test_timecalc.c", ROOT / "src" / "timecalc.c", "-o", exe])
-    return subprocess.run([str(exe)]).returncode
+    rc = subprocess.run([str(exe)]).returncode
+    # the location list through the client's own loader: every city's
+    # offset on three dates against the time-zone database
+    places = out / ("test_places" + (".exe" if IS_WINDOWS else ""))
+    run([cc, "-std=c99", "-O2", "-Wall", "-Wextra", "-Werror", "-I", ROOT / "tests" / "hoststub", "-I", ROOT / "src",
+         ROOT / "tests" / "test_places.c", ROOT / "src" / "places.c", ROOT / "src" / "timecalc.c", "-o", places])
+    rc2 = subprocess.run([sys.executable, str(ROOT / "tools" / "check_places.py"), str(places)], cwd=ROOT).returncode
+    return rc or rc2
 
 
 def main():

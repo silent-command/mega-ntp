@@ -38,6 +38,30 @@ uint32_t tc_seconds(const tc_date *d);
 /* 0 = Sunday, from the date alone. */
 uint8_t tc_weekday(uint16_t year, uint8_t month, uint8_t day);
 
+/* Daylight saving: the rules in use where the location list has cities
+ * that keep it (2026). Each moves the clock one hour forward between two
+ * transitions a year. TC_DST_NONE is every place that stays on one
+ * offset all year. */
+#define TC_DST_NONE 0
+#define TC_DST_US 1      /* US and Canada: second Sunday of March to first Sunday of November, 02:00 local */
+#define TC_DST_EU 2      /* Europe: last Sunday of March to last Sunday of October, 01:00 UTC */
+#define TC_DST_AU 3      /* south-east Australia: first Sunday of October to first Sunday of April */
+#define TC_DST_NZ 4      /* New Zealand: last Sunday of September to first Sunday of April */
+#define TC_DST_CL 5      /* Chile: first Sunday of September 04:00 UTC to first Sunday of April 03:00 UTC */
+#define TC_DST_IL 6      /* Israel: the Friday before the last Sunday of March to the last Sunday of October */
+#define TC_DST_EG 7      /* Egypt: last Friday of April to the end of the last Thursday of October */
+#define TC_DST_RULES 8
+
+/* The rule named as the location file writes it ("NONE", "US", "EU" ...),
+ * or 0xff; and its names, short for the file and long for the screen. */
+uint8_t tc_rule_parse(const char *name);
+const char *tc_rule_name(uint8_t rule);
+const char *tc_rule_text(uint8_t rule);
+
+/* 1 when daylight saving is in effect at the UTC moment `utc` in a place
+ * on `std_minutes` east of UTC that keeps `rule`. */
+uint8_t tc_dst_in_effect(uint8_t rule, int16_t std_minutes, const tc_date *utc);
+
 /* How far `clock` is from `truth`, both from tc_seconds: "3 seconds slow",
  * "5m07s fast", "1h02m03s slow", "2 days fast", or "right to within a
  * second". 32 bytes. */

@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "timecalc.h"
+#include "dst_vectors.h"
 
 static int checks, failed;
 
@@ -156,6 +157,32 @@ int main(void)
   drift(0, 86400UL, "1 day fast");
   drift(0, 200000UL, "2 days fast");
   drift(3000000000UL, 0, "34722 days slow");
+
+  /* daylight saving: every real transition 2026-2040 for a city under
+   * each rule, the second before and the second it happens */
+  {
+    unsigned i;
+    char msg[96];
+    for (i = 0; i < sizeof dst_vectors / sizeof dst_vectors[0]; i++) {
+      const dst_vector *v = &dst_vectors[i];
+      tc_date before = v->at;
+      uint32_t s = tc_seconds(&v->at) - 1;
+      before.second = (uint8_t)(s % 60); before.minute = (uint8_t)(s / 60 % 60); before.hour = (uint8_t)(s / 3600 % 24);
+      if (s / 86400 != tc_seconds(&v->at) / 86400) {   /* the second before is on the previous day */
+        before.day--;
+        if (!before.day) { before.month--; before.day = 31; while (!tc_valid(&before)) before.day--; }
+      }
+      snprintf(msg, sizeof msg, "%s at %04u-%02u-%02u %02u:%02u:%02u UTC: %s", tc_rule_name(v->rule),
+               v->at.year, v->at.month, v->at.day, v->at.hour, v->at.minute, v->at.second, v->starts ? "starts" : "ends");
+      CHECK(tc_dst_in_effect(v->rule, v->std, &v->at) == v->starts, msg);
+      CHECK(tc_dst_in_effect(v->rule, v->std, &before) == !v->starts, msg);
+    }
+    CHECK(tc_rule_parse("eu") == TC_DST_EU && tc_rule_parse("NONE") == TC_DST_NONE && tc_rule_parse("XX") == 0xff, "rule names");
+    {
+      tc_date mid = date(2026, 7, 1, 12, 0, 0);
+      CHECK(!tc_dst_in_effect(TC_DST_NONE, -420, &mid), "no rule, never");
+    }
+  }
 
   printf("%d checks, %d failed\n", checks, failed);
   return failed != 0;
