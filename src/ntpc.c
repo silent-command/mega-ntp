@@ -99,9 +99,38 @@ static void rtc_read(tc_date *d)
   d->weekday = tm.tm_wday;
 }
 
+static uint8_t bcd(uint8_t v) { return (uint8_t)(((v / 10) << 4) | (v % 10)); }
+
+/* One register of the R4-R6 clock, then three frames for it to reach the
+ * chip. mega65-libc's setrtc writes them back to back with pauses too
+ * short for this board: on 2026-10-07 the day register took the month's
+ * value, 10 for 08, the first time a sync changed the date (Sydney,
+ * already tomorrow); a lone write of the day took at once. */
+static void rtc_put(uint8_t reg, uint8_t v)
+{
+  uint8_t last, n = 0;
+  lpoke(0xffd7110UL + reg, v);
+  last = PEEK(0xd7fa);
+  while (n < 3) if (PEEK(0xd7fa) != last) { last = PEEK(0xd7fa); n++; }
+}
+
 static void rtc_write(const tc_date *d)
 {
   struct m65_tm tm;
+  unsigned char t = detect_target();
+  if (t >= TARGET_MEGA65R4 && t <= TARGET_MEGA65R6) {
+    /* the seconds to 0 first, so the chip cannot carry into the minute
+     * while the slower fields go in, and the real seconds last */
+    rtc_put(0, 0);
+    rtc_put(1, bcd(d->minute));
+    rtc_put(2, bcd(d->hour));                      /* 24-hour: this chip has no AM/PM */
+    rtc_put(3, bcd(d->day));
+    rtc_put(4, bcd(d->month));
+    rtc_put(5, bcd((uint8_t)(d->year - 2000)));
+    rtc_put(6, tc_weekday(d->year, d->month, d->day));
+    rtc_put(0, bcd(d->second));
+    return;
+  }
   tm.tm_sec = d->second;
   tm.tm_min = d->minute;
   tm.tm_hour = d->hour;
@@ -326,9 +355,9 @@ static void edit_server(void)
  * since a clock set to UTC is the mistake otherwise (2026-10-07), and by
  * L afterwards. */
 
-#define PICK_FIRST 4
-#define PICK_ROWS ((unsigned char)(m65_screen_rows() - 8))
-#define ROW_PICK_INFO ((unsigned char)(m65_screen_rows() - 3))
+#define ROW_PICK_HEAD 4                   /* under the clock, which keeps ticking on row 2 */
+#define PICK_FIRST 6
+#define PICK_ROWS ((unsigned char)(m65_screen_rows() - 10))
 
 static uint8_t pick_first;                /* the cities shown are pick_first.. */
 static uint8_t pick_mode;                 /* what the list holds */
@@ -380,8 +409,8 @@ static void pick_page(uint8_t n, uint8_t top, uint8_t sel)
 static uint8_t pick(const char *heading, uint8_t n, const char *stop_word)
 {
   uint8_t sel = 0, top = 0, old, k, i, c;
-  ui_clear_rows(1, (unsigned char)(m65_screen_rows() - 2));
-  ui_line(2, heading, 0);
+  ui_clear_rows(3, (unsigned char)(m65_screen_rows() - 2));
+  ui_line(ROW_PICK_HEAD, heading, 0);
   clear(); add("CRSR moves   RETURN chooses   ");
   if (pick_mode == PICK_CITIES) add("a letter jumps   ");
   add("RUN/STOP "); add(stop_word);
@@ -418,12 +447,12 @@ static uint8_t location_by_hand(void)
   int16_t v;
   uint8_t r;
   tc_format_offset(buf, cfg_offset);
-  ui_clear_rows(1, (unsigned char)(m65_screen_rows() - 1));
-  ui_line(2, "Your standard time, in hours from UTC: like -5, +1 or +5:30.", 0);
-  ui_line(3, "Give the winter offset; daylight saving is chosen next.", 0);
+  ui_clear_rows(3, (unsigned char)(m65_screen_rows() - 1));
+  ui_line(ROW_PICK_HEAD, "Your standard time, in hours from UTC: like -5, +1 or +5:30.", 0);
+  ui_line(ROW_PICK_HEAD + 1, "Give the winter offset; daylight saving is chosen next.", 0);
   ui_line(UI_ROW_KEYS, "RETURN accepts   RUN/STOP goes back", 0);
   for (;;) {
-    if (!ui_read_line(5, "Offset: UTC", buf, 7)) return 0;
+    if (!ui_read_line(PICK_FIRST + 1, "Offset: UTC", buf, 7)) return 0;
     if (tc_parse_offset(buf, &v)) break;
     ui_status("not an offset: like -5, +1 or +5:30, from -12:00 to +14:00", 0);
   }
@@ -472,7 +501,9 @@ static void edit_location(void)
   uint8_t chose = choose_location(0);
   ui_clear_rows(1, (unsigned char)(m65_screen_rows() - 1));
   draw_all();
-  if (chose) save_settings(); else ui_status(0, 0);
+  if (!chose) { ui_status(0, 0); return; }
+  save_settings();
+  if (net_ready) sync();                          /* the new location at once, as the first run does */
 }
 
 int main(void)

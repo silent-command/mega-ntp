@@ -157,4 +157,25 @@ year) and Morocco on UTC+0 all year; the list follows it. The test
 target also loads the real list through src/places.c on the host and
 compares all 150 cities on three dates with the database.
 
-Not yet run on the machine: the serial adapter was disconnected.
+Run on the machine the same evening (R6, 25 and 50 rows): the first-run
+question on a disk without NTP.CFG, North America, N jumping to New
+York, the first sync at UTC-04:00 with daylight saving and the clock
+within a second of the Mac; a restart syncing without asking; L to
+Sydney at UTC+11:00; L to an offset by hand, -5 with the US rule. The
+heading first sat on the clock's row and was overwritten every second;
+it moved down. Choosing a location now syncs at once, as the first run
+does.
+
+### 5.5 The day register took the month's value (2026-10-07)
+
+The Sydney sync was the first to change the date (it is already the
+8th there), and the clock read back the 10th: the day register held
+0x10, the month's value, while every other field was right. Earlier
+syncs never changed the date, so nothing showed it. mega65-libc's
+setrtc writes the R4-R6 clock's registers one after another with pauses
+too short for this board; a lone write of the day register through the
+monitor took at once. The client now writes the registers itself on
+R4-R6, three frames apart, with the seconds zeroed first so the chip
+cannot carry into the minute while the slower fields go in, and the
+real seconds written last (R2-R3 still use setrtc). Checked: Sydney's
+date and time read back exactly, and back across the date to New York.
