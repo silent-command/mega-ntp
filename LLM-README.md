@@ -61,7 +61,7 @@ the next sync sets the clock to UTC.
 
 ## License
 
-0BSD, see `LICENSE`. mega-net is a separate project under the same
+Apache License 2.0, see `LICENSE`. mega-net is a separate project under the same
 license; mega65-libc is under its own. The screen, F011, CBM DOS, boot
 and exit modules under `src/platform/` are shared with the gopher, FTP
 and SSH clients, under the same license.

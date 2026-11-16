@@ -4,7 +4,7 @@ An NTP client for the MEGA65 on mega-net: DHCP, the time server looked
 up by name, one SNTP exchange, the real-time clock set in local time by
 a UTC offset, and read back to prove it. Settings in `NTP.CFG`. Native
 mode, llvm-mos, 80x25, `-Oz`. Version in `src/ntpc.c` (`NTPC_VERSION`).
-0BSD. Releases carry `bin/NTP.D81`.
+Apache License 2.0. Releases carry `bin/NTP.D81`.
 
 The platform modules under `src/platform/` (`m65_*`: screen, font,
 F011, CBM DOS, scratch from `../mega-ftp`; boot and exit from `../mega-ssh`,
