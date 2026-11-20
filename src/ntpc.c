@@ -19,7 +19,7 @@
 #include "places.h"
 #include "ui.h"
 
-#define NTPC_VERSION "0.2.3"
+#define NTPC_VERSION "0.2.4"
 
 #define ROW_CLOCK 2
 #define ROW_SERVER 4
