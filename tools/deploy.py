@@ -4,7 +4,7 @@ client wrote on the disk already there (the server and the UTC offset).
 Replacing the disk image outright loses it, and the next sync sets the
 clock to UTC (REQUIREMENTS.md 5.3).
 
-    python3 tools/deploy.py [--port /dev/cu.usbserial-21301] [image.d81]
+    python3 tools/deploy.py [--port /dev/cu.usbserial-21301 | --port tcp#pi3:4510] [image.d81]
 
 Needs m65 and mega65_ftp from mega65-tools on the PATH (with or without
 the .osx suffix) and c1541 from VICE. The machine is reset first, as
@@ -17,11 +17,19 @@ ROOT = Path(__file__).resolve().parent.parent
 KEEP = ["ntp.cfg"]                     # c1541 wants lowercase; the client writes it upper-cased
 
 
+sys.path.insert(0, str(ROOT.parent / "mega-net" / "tools"))
+import device                          # where the MEGA65 is (serial or the keyboard bridge), which tools reach it
+
+
 def tool(name):
-    for cand in (name, name + ".osx"):
-        if shutil.which(cand):
-            return cand
-    sys.exit(f"{name} not found on the PATH")
+    if name == "c1541":
+        if shutil.which(name):
+            return name
+        sys.exit("c1541 not found on the PATH")
+    found = device.find_tool(name)
+    if not found:
+        sys.exit(f"{name} not found (MEGA65_TOOLS, the PATH, /usr/local/bin)")
+    return found
 
 
 def run(args, check=True):
@@ -38,7 +46,7 @@ def run(args, check=True):
 
 def main():
     args = sys.argv[1:]
-    port = os.environ.get("MEGA65_PORT", "/dev/cu.usbserial-21301")
+    port = device.port()
     if "--port" in args:
         i = args.index("--port"); port = args[i + 1]; del args[i:i + 2]
     image = Path(args[0]) if args else ROOT / "bin" / "NTP.D81"
@@ -49,7 +57,7 @@ def main():
         td = Path(td)
         old, new = td / "old.d81", td / "NTP.D81"
         shutil.copy(image, new)
-        run([m65, "-F"], check=False); time.sleep(2)                  # reset: mega65_ftp refuses a running program
+        run([m65, "-l", port, "-F"], check=False); time.sleep(2)                  # reset: mega65_ftp refuses a running program
         run([ftp, "-l", port, "-c", f"get NTP.D81 {old}"], check=False)
         kept, absent = [], []
         if old.exists() and old.stat().st_size == 819200:
@@ -70,9 +78,9 @@ def main():
                 print("not on the card's disk, so not carried:", ", ".join(absent))
         else:
             print("no NTP.D81 on the card yet, nothing to keep")
-        run([m65, "-F"], check=False); time.sleep(2)   # reset again: a second card session straight after the first stalled twice (2026-09-29)
+        run([m65, "-l", port, "-F"], check=False); time.sleep(2)   # reset again: a second card session straight after the first stalled twice (2026-09-29)
         run([ftp, "-l", port, "-c", "del NTP.D81"], check=False)   # its own session: a del and a put in one stalled the card (2026-09-29)
-        run([m65, "-F"], check=False); time.sleep(2)
+        run([m65, "-l", port, "-F"], check=False); time.sleep(2)
         r = run([ftp, "-l", port, "-c", f"put {new} NTP.D81"], check=False)
         if "in " not in r.stdout and "bytes" not in r.stdout:
             sys.exit(f"the upload did not report success:\n{r.stdout}{r.stderr}")
