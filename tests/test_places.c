@@ -1,3 +1,5 @@
+/* Copyright 2026 Justin Cameron
+ * SPDX-License-Identifier: Apache-2.0 */
 /* The host check for src/places.c: the real assets/zones.txt loaded the
  * way the client loads it, every city read back, and the offset each
  * would set at the UTC moment given on the command line printed for

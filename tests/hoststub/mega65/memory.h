@@ -1,3 +1,5 @@
+/* Copyright 2026 Justin Cameron
+ * SPDX-License-Identifier: Apache-2.0 */
 /* host stand-in for the test of places.c */
 #ifndef HOST_MEMORY_H
 #define HOST_MEMORY_H

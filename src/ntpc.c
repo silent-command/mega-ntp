@@ -1,3 +1,5 @@
+/* Copyright 2026 Justin Cameron
+ * SPDX-License-Identifier: Apache-2.0 */
 /* MEGA65 NTP client: asks a time server for the time over mega-net and
  * sets the real-time clock to it, in local time: the location kept in
  * NTP.CFG gives the standard offset and the daylight-saving rule, and

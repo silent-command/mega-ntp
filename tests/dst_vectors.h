@@ -1,3 +1,5 @@
+/* Copyright 2026 Justin Cameron
+ * SPDX-License-Identifier: Apache-2.0 */
 /* Generated from the IANA time-zone database (Python zoneinfo): each
  * daylight-saving transition from 2026 to 2040 for a city under each
  * rule, the UTC second it happens and whether summer time starts there.

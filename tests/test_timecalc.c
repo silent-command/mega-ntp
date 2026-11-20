@@ -1,3 +1,5 @@
+/* Copyright 2026 Justin Cameron
+ * SPDX-License-Identifier: Apache-2.0 */
 /* The host suite for src/timecalc.c: python3 build.py test. */
 #include <stdio.h>
 #include <string.h>

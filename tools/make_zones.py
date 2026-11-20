@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2026 Justin Cameron
+# SPDX-License-Identifier: Apache-2.0
 """Makes assets/zones.txt, the location list the client offers, from the
 IANA time-zone database (Python's zoneinfo): for each city, its standard
 offset, and which of the client's daylight-saving rules reproduces every

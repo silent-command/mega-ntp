@@ -1,3 +1,5 @@
+/* Copyright 2026 Justin Cameron
+ * SPDX-License-Identifier: Apache-2.0 */
 /* The settings, in NTP.CFG on the program disk: a magic line, the time
  * server, the standard UTC offset as "+HH:MM", the daylight-saving rule
  * and the city chosen ("NTP2"). The first version's file, "NTP1", has

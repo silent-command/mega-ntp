@@ -1,3 +1,5 @@
+/* Copyright 2026 Justin Cameron
+ * SPDX-License-Identifier: Apache-2.0 */
 /* The location list: ZONES on the program disk, made from the IANA time
  * zone database by tools/make_zones.py. Each line is "region|city|
  * standard offset|daylight-saving rule"; the text stays in bank 1 and is

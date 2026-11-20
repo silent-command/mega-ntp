@@ -1,3 +1,5 @@
+/* Copyright 2026 Justin Cameron
+ * SPDX-License-Identifier: Apache-2.0 */
 /* Bringing mega-net up, and the three questions this client asks of it:
  * an address, a name, the time. Every wait is bounded on $D7FA. */
 #ifndef NETUTIL_H

@@ -1,3 +1,5 @@
+/* Copyright 2026 Justin Cameron
+ * SPDX-License-Identifier: Apache-2.0 */
 /* The client's arithmetic, apart from the machine: UTC offsets as typed,
  * dates as the real-time clock holds them, and how far apart two of them
  * are. C99 and stdint.h only, so tests/test_timecalc.c runs it on the

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2026 Justin Cameron
+# SPDX-License-Identifier: Apache-2.0
 """Puts bin/NTP.D81 onto the MEGA65's SD card root, keeping the NTP.CFG the
 client wrote on the disk already there (the server and the UTC offset).
 Replacing the disk image outright loses it, and the next sync sets the

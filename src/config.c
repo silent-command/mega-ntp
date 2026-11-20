@@ -1,3 +1,5 @@
+/* Copyright 2026 Justin Cameron
+ * SPDX-License-Identifier: Apache-2.0 */
 #include "m65_cbmdos.h"
 #include "timecalc.h"
 #include "config.h"

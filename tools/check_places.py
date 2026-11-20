@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+# Copyright 2026 Justin Cameron
+# SPDX-License-Identifier: Apache-2.0
 """Runs build/host/test_places (the client's loader over assets/zones.txt)
 at three moments, summer and winter on both sides of the equator, and
 compares each city's offset with the IANA time-zone database. Called by
